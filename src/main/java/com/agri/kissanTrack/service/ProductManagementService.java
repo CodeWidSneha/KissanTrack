@@ -38,19 +38,7 @@ public class ProductManagementService {
         List<Product> products = new ArrayList<>();
         try{
             products = productRepository.findAll();
-
-
-            getAllProductsRespDTO.setMessage("Fetched product successfully");
-            List<ProductDTO> productDTOS = new ArrayList<>();
-
-            products.forEach(product -> {
-
-                ProductDTO productDTO = ProductConverter.getProductDTOFromProduct(product);
-                productDTOS.add(productDTO);
-            });
-            getAllProductsRespDTO.setProducts(productDTOS);
-
-
+            ProductConverter.getProductResponseFromEntities(getAllProductsRespDTO, products, "Fetched product successfully");
 
         }
         catch (Exception e){
@@ -60,6 +48,7 @@ public class ProductManagementService {
         }
         return getAllProductsRespDTO;
     }
+
 
 
 
@@ -107,6 +96,38 @@ public class ProductManagementService {
             throw new ProductNotFoundException(404, "No product exists with the requested id");
 
         }
+
+    }
+
+    public GetAllProductsRespDTO getProductsGreaterThan(double price){
+        GetAllProductsRespDTO getAllProductsRespDTO = new GetAllProductsRespDTO();
+        List<Product> products = productRepository.findByPriceGreaterThan(price);
+        if (products.isEmpty()){
+            LOG.error("Exception occurred as no product exists which is greater than the requested price : {}",price);
+            throw new ProductNotFoundException(404,"No product exists which is greater than the requested price");
+        }
+        else{
+
+            ProductConverter.getProductResponseFromEntities(getAllProductsRespDTO, products,"Fetched products whose price is greater than "+price);
+
+        }
+        return getAllProductsRespDTO;
+
+    }
+
+    public GetAllProductsRespDTO getProductsStartsWith(String prefix){
+        GetAllProductsRespDTO getAllProductsRespDTO = new GetAllProductsRespDTO();
+        List<Product> products = productRepository.fetchProductsWithNamesStartWith(prefix);
+        if (products.isEmpty()){
+            LOG.error("Exception occurred as no product exists with the requested prefix : {}",prefix);
+            throw new ProductNotFoundException(404,"No product exists with the requested prefix");
+        }
+        else{
+
+            ProductConverter.getProductResponseFromEntities(getAllProductsRespDTO, products,"Fetched products whose name starts with "+prefix);
+
+        }
+        return getAllProductsRespDTO;
 
     }
 

@@ -14,22 +14,35 @@ import java.time.LocalDateTime;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(DatabaseInteractionException.class)
-    public ResponseEntity<ResponseDTO> handleDatabaseError(DatabaseInteractionException ex){
+    public ResponseEntity<ResponseDTO> handleDatabaseError(DatabaseInteractionException ex) {
 
-        return new ResponseEntity<>( new ErrorResponse(500, ex.getMessage(), LocalDateTime.now()),
+        return new ResponseEntity<>(new ErrorResponse(500, ex.getMessage(), LocalDateTime.now()),
                 HttpStatus.INTERNAL_SERVER_ERROR
-               );
+        );
 
 
     }
 
     @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<ResponseDTO> handleProductNotFoundError(ProductNotFoundException ex){
+    public ResponseEntity<ResponseDTO> handleProductNotFoundError(ProductNotFoundException ex) {
 
-        return new ResponseEntity<>( new ErrorResponse(404, ex.getMessage(), LocalDateTime.now()),
+        return new ResponseEntity<>(new ErrorResponse(404, ex.getMessage(), LocalDateTime.now()),
                 HttpStatus.NOT_FOUND
         );
 
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ResponseDTO> handleException(Exception ex) {
+
+        return new ResponseEntity<>(new ErrorResponse(404, ex.getMessage(), LocalDateTime.now()),
+                HttpStatus.NOT_FOUND
+        );
+
+    }
+
+
+
 }
+
+

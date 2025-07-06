@@ -1,6 +1,7 @@
 package com.agri.kissanTrack.controller;
 
 import com.agri.kissanTrack.dto.GetAllProductsRespDTO;
+import com.agri.kissanTrack.dto.GetAllSuppliersRespDTO;
 import com.agri.kissanTrack.dto.ProductDTO;
 import com.agri.kissanTrack.entities.Product;
 import com.agri.kissanTrack.dto.SaveProductReq;
@@ -34,6 +35,17 @@ public class ProductController {
     public ProductDTO getProduct(@PathVariable Long id){
         return productManagementService.getProductById(id);
 
+    }
+
+    @GetMapping("/greaterThan/{price}")
+    public GetAllProductsRespDTO getProductsGreaterThanPrice(@PathVariable double price){
+        return productManagementService.getProductsGreaterThan(price);
+
+    }
+
+    @GetMapping("/startsWith/{prefix}")
+    public GetAllProductsRespDTO getProductsStartingWithPrefix(@PathVariable String prefix){
+        return productManagementService.getProductsStartsWith(prefix);
     }
 
 }
