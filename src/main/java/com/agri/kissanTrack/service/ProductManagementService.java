@@ -1,12 +1,11 @@
 package com.agri.kissanTrack.service;
 
-import com.agri.kissanTrack.dto.GetAllProductsRespDTO;
-import com.agri.kissanTrack.dto.ProductDTO;
+import com.agri.kissanTrack.dto.*;
 import com.agri.kissanTrack.entities.Product;
-import com.agri.kissanTrack.dto.SaveProductReq;
 import com.agri.kissanTrack.entities.Supplier;
 import com.agri.kissanTrack.exception.DatabaseInteractionException;
 import com.agri.kissanTrack.exception.ProductNotFoundException;
+import com.agri.kissanTrack.exception.SupplierNotFoundException;
 import com.agri.kissanTrack.repository.ProductRepository;
 import com.agri.kissanTrack.repository.SupplierRepository;
 import com.agri.kissanTrack.utility.ProductConverter;
@@ -35,10 +34,18 @@ public class ProductManagementService {
     public GetAllProductsRespDTO getEntities(){
 
         GetAllProductsRespDTO getAllProductsRespDTO = new GetAllProductsRespDTO();
-        List<Product> products = new ArrayList<>();
+        List<Product> products;
         try{
             products = productRepository.findAll();
-            ProductConverter.getProductResponseFromEntities(getAllProductsRespDTO, products, "Fetched product successfully");
+            String message;
+            if(!products.isEmpty()){
+                message="Fetched product successfully";
+
+            }
+            else{
+                message = "No products in DB";
+            }
+            ProductConverter.getProductResponseFromEntities(getAllProductsRespDTO, products, message);
 
         }
         catch (Exception e){
@@ -52,8 +59,13 @@ public class ProductManagementService {
 
 
 
-    public Product saveEntity(SaveProductReq product){
+    public Product saveEntity(ProductReq product){
 
+        return saveProductInDb(product, -1L);
+
+    }
+
+    private Product saveProductInDb(ProductReq product, Long id) {
 
         Long supplierId= product.getSupplierId();
         AtomicReference<Product> productSaved = new AtomicReference<>();
@@ -66,22 +78,30 @@ public class ProductManagementService {
                 product1.setPrice(product.getPrice());
                 product1.setQuantity(product.getQuantity());
                 product1.setSupplier(sup);
+                if (id !=-1){
+                    product1.setId(id);
+                }
                 productSaved.set(productRepository.save(product1));
 
             });
-            if(supplier.isEmpty())
-            {
-                LOG.error("No supplier found, data not saved");
-                return null;
-            }
+            handleWhenSupplierNotFound(supplier);
 
         }
         catch (Exception e){
             LOG.error("Exception occurred while saving Product from DB ", e);
+            throw new DatabaseInteractionException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Exception occurred while saving Product from DB");
 
         }
         return productSaved.get();
+    }
 
+    private static void handleWhenSupplierNotFound(Optional<Supplier> supplier) {
+        if(supplier.isEmpty())
+        {
+            LOG.error("No supplier found, data not saved");
+            throw new SupplierNotFoundException(HttpStatus.NOT_FOUND.value(),
+                    "Supplier does not exist with the requested id");
+        }
     }
 
     public ProductDTO getProductById(Long id){
@@ -128,6 +148,66 @@ public class ProductManagementService {
 
         }
         return getAllProductsRespDTO;
+
+    }
+
+    public ProductDTO updateProduct(Long id, ProductReq productReq){
+
+        Optional<Product> optionalProduct;
+        try{
+            optionalProduct = productRepository.findById(id);
+
+        }
+        catch (Exception e){
+            LOG.error("Exception occurred while updating Product", e);
+            throw new DatabaseInteractionException(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Exception occurred while updating Product");
+
+        }
+
+        if(optionalProduct.isPresent()){
+
+            Optional<Supplier> supplier = supplierRepository.findById(productReq.getSupplierId());
+            if(supplier.isPresent())
+            {
+                Product updatedProduct = saveProductInDb(productReq, id);
+                return  ProductConverter.getProductDTOFromProduct(updatedProduct);
+            }
+            else {
+                handleWhenSupplierNotFound(supplier);
+                return null;
+            }
+        }
+        else{
+            LOG.error("Exception occurred as no product exists with the requested id : {}", id);
+            throw new ProductNotFoundException(404, "No product exists with the requested id");
+
+        }
+
+    }
+    public ResponseDTO deleteProduct(Long id){
+        try {
+            Optional<Product> optionalProduct = productRepository.findById(id);
+            if (optionalProduct.isPresent()) {
+                productRepository.deleteById(id);
+                return new DeleteSuccessResponse("Product deleted successfully");
+
+            }
+            else{
+                LOG.error("Exception occurred as no product exists with the requested id : {}", id);
+                throw new ProductNotFoundException(404, "No product exists with the requested id");
+
+            }
+
+        }
+
+        catch (Exception e){
+                LOG.error("Exception occurred while deleting Product", e);
+                throw new DatabaseInteractionException(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        "Exception occurred while deleting Product");
+
+            }
+
 
     }
 

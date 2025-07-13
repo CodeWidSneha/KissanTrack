@@ -1,5 +1,5 @@
 package com.agri.kissanTrack.dto;
-public class SaveProductReq implements RequestDTO{
+public class ProductReq implements RequestDTO{
 
     private String name;
     private Double price;
