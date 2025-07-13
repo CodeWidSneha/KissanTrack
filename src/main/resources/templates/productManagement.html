@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Product Management Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="container mt-5">
+    <h2 class="mb-4">Product Management Portal</h2>
+
+    <!-- Toolbar -->
+    <div class="mb-3 d-flex justify-content-end gap-2">
+        <button class="btn btn-primary" onclick="openAddModal()">Add</button>
+        <button class="btn btn-success" onclick="fetchProducts()">⟳</button>
+        <button class="btn btn-danger" onclick="deleteSelected()">Delete</button>
+    </div>
+
+    <!-- Product Table -->
+    <table class="table table-bordered table-hover" id="productTable">
+        <thead class="table-light">
+        <tr>
+            <th><input type="checkbox" onclick="toggleAllCheckboxes(this)" /></th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Supplier ID</th>
+        </tr>
+        </thead>
+        <tbody id="productBody">
+        <!-- Filled dynamically -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="addProductForm" onsubmit="saveProduct(event)">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" type="text" placeholder="Name" name="name" required />
+                    <input class="form-control mb-2" type="number" placeholder="Price" name="price" required />
+                    <input class="form-control mb-2" type="number" placeholder="Quantity" name="quantity" required />
+                    <input class="form-control mb-2" type="text" placeholder="Supplier ID" name="supplierId" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="toast" class="toast align-items-center text-white bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMsg">Success!</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const productTable = document.getElementById("productBody");
+    const toast = new bootstrap.Toast(document.getElementById("toast"));
+    const toastMsg = document.getElementById("toastMsg");
+    const addModal = new bootstrap.Modal(document.getElementById("addProductModal"));
+
+    async function fetchProducts() {
+      const res = await fetch("/product"); // Replace with your REST endpoint
+      const resp = await res.json();
+      const products = resp.products;
+      productTable.innerHTML = "";
+      products.forEach(p => {
+        productTable.innerHTML += `
+          <tr>
+            <td><input type="checkbox" class="product-checkbox" data-id="${p.id}" /></td>
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${p.price}</td>
+            <td>${p.quantity}</td>
+            <td>${p.supplierId}</td>
+          </tr>`;
+      });
+    }
+
+    function toggleAllCheckboxes(masterCheckbox) {
+      document.querySelectorAll(".product-checkbox").forEach(cb => cb.checked = masterCheckbox.checked);
+    }
+
+    function openAddModal() {
+      document.getElementById("addProductForm").reset();
+      addModal.show();
+    }
+
+    async function saveProduct(event) {
+  event.preventDefault();
+  const form = event.target;
+
+  // Parse and validate integers
+  const price = parseInt(form.price.value, 10);
+  const quantity = parseInt(form.quantity.value, 10);
+  const supplierId = parseInt(form.supplierId.value, 10);
+
+  if (isNaN(price) || isNaN(quantity) || isNaN(supplierId)) {
+    showToast("Price, Quantity, and Supplier ID must be valid integers!", true);
+    return;
+  }
+
+  const product = {
+    name: form.name.value.trim(),
+    price,
+    quantity,
+    supplierId
+  };
+
+  const res = await fetch("/product", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(product)
+  });
+
+  if (res.ok) {
+    addModal.hide();
+    showToast("Product added successfully!");
+    fetchProducts();
+  } else {
+    showToast("Failed to add product!", true);
+  }
+}
+
+
+    async function deleteSelected() {
+      const selectedIds = Array.from(document.querySelectorAll(".product-checkbox:checked"))
+        .map(cb => cb.dataset.id);
+
+      if (selectedIds.length === 0) {
+        alert("Please select at least one product to delete.");
+        return;
+      }
+
+      await Promise.all(selectedIds.map(id =>
+        fetch(`/product/${id}`, { method: "DELETE" })
+      ));
+
+      showToast("Selected products deleted!");
+      fetchProducts();
+    }
+
+    function showToast(message, isError = false) {
+      toastMsg.textContent = message;
+      const toastElement = document.getElementById("toast");
+      toastElement.classList.remove("bg-success", "bg-danger");
+      toastElement.classList.add(isError ? "bg-danger" : "bg-success");
+      toast.show();
+    }
+
+    // Initial load
+    fetchProducts();
+</script>
+</body>
+</html>
