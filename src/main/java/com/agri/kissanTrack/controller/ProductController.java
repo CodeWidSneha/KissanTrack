@@ -1,15 +1,13 @@
 package com.agri.kissanTrack.controller;
 
 import com.agri.kissanTrack.dto.GetAllProductsRespDTO;
-import com.agri.kissanTrack.dto.GetAllSuppliersRespDTO;
 import com.agri.kissanTrack.dto.ProductDTO;
+import com.agri.kissanTrack.dto.ResponseDTO;
 import com.agri.kissanTrack.entities.Product;
-import com.agri.kissanTrack.dto.SaveProductReq;
+import com.agri.kissanTrack.dto.ProductReq;
 import com.agri.kissanTrack.service.ProductManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/product")
@@ -26,7 +24,7 @@ public class ProductController {
     }
 
     @PostMapping
-    public Product saveProduct(@RequestBody SaveProductReq product){
+    public Product saveProduct(@RequestBody ProductReq product){
 
         return productManagementService.saveEntity(product);
     }
@@ -47,6 +45,14 @@ public class ProductController {
     public GetAllProductsRespDTO getProductsStartingWithPrefix(@PathVariable String prefix){
         return productManagementService.getProductsStartsWith(prefix);
     }
-
+    @PutMapping("/{id}")
+    public ProductDTO updateProduct(@PathVariable Long id, @RequestBody ProductReq product) {
+        return productManagementService.updateProduct(id, product);
+    }
+    @DeleteMapping("/{id}")
+    public ResponseDTO deleteProduct(@PathVariable Long id) {
+        return productManagementService.deleteProduct(id);
+    }
 }
+
 
